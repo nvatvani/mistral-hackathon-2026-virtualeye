@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VirtualEye Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- PyScript -->
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="./static/style.css">
+
+    <!-- PyScript Configuration -->
+    <py-config>
+        packages = ["requests"]
+
+        [[fetch]]
+        from = "./data"
+        files = ["users.txt"]
+
+        [[fetch]]
+        from = "."
+        files = ["config.json"]
+    </py-config>
+
+</head>
+
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+    <!-- Navbar -->
+    <nav class="bg-slate-800 border-b border-indigo-500/30 p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+                <span class="mr-2">👁️</span>VirtualEye
+            </h1>
+            <div id="nav-actions" class="hidden">
+                <span id="user-display" class="text-sm text-slate-400 mr-4"></span>
+                <button id="logout-btn"
+                    class="text-sm px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded transition-colors"
+                    py-click="logout">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Container -->
+    <main id="login-container"
+        class="container mx-auto mt-20 max-w-md p-6 bg-slate-800 rounded-xl shadow-2xl border border-slate-700">
+        <h2 class="text-2xl font-semibold mb-6 text-center">Secure Access</h2>
+        <div id="login-error"
+            class="hidden bg-red-500/20 border border-red-500 text-red-300 px-4 py-2 rounded mb-4 text-sm"></div>
+        <form onsubmit="event.preventDefault();" class="space-y-4">
+            <div>
+                <label for="username" class="block text-sm font-medium text-slate-400 mb-1">Username</label>
+                <input type="text" id="username"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition-colors"
+                    autocomplete="username">
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium text-slate-400 mb-1">Password</label>
+                <input type="password" id="password"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition-colors"
+                    autocomplete="current-password">
+            </div>
+            <button id="login-btn" py-click="attempt_login"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors mt-4">
+                Authenticate
+            </button>
+        </form>
+    </main>
+
+    <!-- App Container (Hidden until auth) -->
+    <main id="app-container" class="container mx-auto mt-8 p-4 hidden">
+
+        <!-- Tabs -->
+        <div class="flex space-x-2 mb-6 border-b border-slate-700">
+            <button id="tab-settings" py-click="switch_tab_settings"
+                class="px-6 py-3 font-medium text-emerald-400 border-b-2 border-emerald-400 transition-colors">
+                Settings & Status
+            </button>
+            <button id="tab-blind" py-click="switch_tab_blind"
+                class="px-6 py-3 font-medium text-slate-500 hover:text-slate-300 transition-colors">
+                Blind Accessibility Assistant
+            </button>
+            <button id="tab-cctv" py-click="switch_tab_cctv"
+                class="px-6 py-3 font-medium text-slate-500 hover:text-slate-300 transition-colors">
+                CCTV Temporal Reasoning
+            </button>
+        </div>
+
+        <!-- content loaded dynamically by PyScript -->
+        <div id="active-view" class="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-lg min-h-[500px]">
+            <!-- Settings content structure -->
+            <div id="settings-view">
+                <h3 class="text-xl font-semibold mb-2">LMStudio Connection Settings</h3>
+                <p class="text-slate-400 mb-6 text-sm">Validate your connection to the local LMStudio instance and
+                    ensure the correct model is loaded.</p>
+
+                <div class="bg-slate-900/50 rounded-lg p-6 border border-slate-700 mb-6 max-w-2xl">
+                    <div class="grid gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">LMStudio Endpoint URL</label>
+                            <input type="text" id="config-url"
+                                class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-slate-300 font-mono focus:border-emerald-500 focus:outline-none transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Target Model Name</label>
+                            <input type="text" id="config-model"
+                                class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-slate-300 font-mono focus:border-emerald-500 focus:outline-none transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Max Response Tokens</label>
+                            <input type="number" id="config-tokens"
+                                class="w-full md:w-1/2 bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-slate-300 font-mono focus:border-emerald-500 focus:outline-none transition-colors">
+                        </div>
+                    </div>
+                    <button id="verify-btn" py-click="verify_model"
+                        class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-medium transition-colors">
+                        Verify Connection
+                    </button>
+                </div>
+
+                <div id="verify-result" class="hidden p-6 rounded-lg bg-slate-900 border border-slate-700 max-w-2xl">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div id="verify-indicator" class="w-4 h-4 rounded-full bg-slate-500"></div>
+                        <h4 class="text-lg font-semibold" id="verify-title">Verification Status</h4>
+                    </div>
+                    <p id="verify-message" class="text-sm text-slate-300"></p>
+                </div>
+            </div>
+
+            <!-- Virtual Eye content structure -->
+            <div id="cctv-view" class="hidden">
+                <h3 class="text-xl font-semibold mb-2">Temporal Analysis</h3>
+                <p class="text-slate-400 mb-6 text-sm">Upload two sequential frames to analyze the delta state and
+                    detect significant events.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div
+                        class="border border-dashed border-slate-600 rounded-lg p-8 text-center bg-slate-900/50 hover:bg-slate-900 transition-colors">
+                        <input type="file" id="image1" accept="image/*" class="hidden"
+                            py-change="handle_image_upload_1">
+                        <label for="image1" class="cursor-pointer flex flex-col items-center">
+                            <span class="text-4xl mb-2">📸</span>
+                            <span class="text-slate-300 font-medium">Select Image 1 (Before)</span>
+                        </label>
+                        <img id="preview1" class="mt-4 max-h-48 mx-auto hidden rounded shadow">
+                    </div>
+
+                    <div
+                        class="border border-dashed border-slate-600 rounded-lg p-8 text-center bg-slate-900/50 hover:bg-slate-900 transition-colors">
+                        <input type="file" id="image2" accept="image/*" class="hidden"
+                            py-change="handle_image_upload_2">
+                        <label for="image2" class="cursor-pointer flex flex-col items-center">
+                            <span class="text-4xl mb-2">📸</span>
+                            <span class="text-slate-300 font-medium">Select Image 2 (After)</span>
+                        </label>
+                        <img id="preview2" class="mt-4 max-h-48 mx-auto hidden rounded shadow">
+                    </div>
+                </div>
+
+                <button id="analyze-cctv-btn" py-click="analyze_cctv"
+                    class="button-disabled w-full md:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium transition-colors my-4 float-right"
+                    disabled>
+                    Analyze Delta
+                </button>
+                <div class="clear-both"></div>
+
+                <div id="cctv-result" class="hidden mt-6 p-6 rounded-lg bg-slate-900 border border-slate-700">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div id="status-indicator" class="w-4 h-4 rounded-full bg-slate-500"></div>
+                        <h4 class="text-lg font-semibold" id="status-title">Analysis Result</h4>
+                    </div>
+                    <div id="cctv-analysis-text"
+                        class="text-slate-300 whitespace-pre-wrap leading-relaxed prose prose-invert max-w-none prose-emerald">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accessibility content structure -->
+            <div id="blind-view" class="hidden">
+                <h3 class="text-xl font-semibold mb-2">Spatial Audio Describer</h3>
+                <p class="text-slate-400 mb-6 text-sm">Upload a software UI screenshot or physical room image for
+                    structural description.</p>
+
+                <div
+                    class="border border-dashed border-slate-600 rounded-lg p-8 text-center bg-slate-900/50 hover:bg-slate-900 transition-colors max-w-2xl mx-auto mb-6">
+                    <input type="file" id="image-access" accept="image/*" class="hidden"
+                        py-change="handle_image_upload_3">
+                    <label for="image-access" class="cursor-pointer flex flex-col items-center">
+                        <span class="text-4xl mb-2">🏞️</span>
+                        <span class="text-slate-300 font-medium">Select Reference Image</span>
+                    </label>
+                    <img id="preview3" class="mt-4 max-h-64 mx-auto hidden rounded shadow">
+                </div>
+
+                <div class="flex justify-center">
+                    <button id="analyze-access-btn" py-click="analyze_accessibility"
+                        class="button-disabled px-8 py-3 bg-cyan-600 hover:bg-cyan-700 rounded-lg font-medium transition-colors mb-4"
+                        disabled>
+                        Generate Spatial Description
+                    </button>
+                </div>
+
+                <div id="access-result"
+                    class="hidden mt-6 p-6 rounded-lg bg-slate-900 border border-slate-700 max-w-3xl mx-auto">
+                    <h4 class="text-lg font-semibold text-cyan-400 mb-2">Scene Description</h4>
+                    <div id="access-analysis-text"
+                        class="text-slate-300 whitespace-pre-wrap leading-relaxed prose prose-invert max-w-none prose-cyan">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Global Loading Overlay -->
+    <div id="loading-overlay"
+        class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+        <div class="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-4"></div>
+        <p id="loading-text" class="text-indigo-400 font-medium animate-pulse">Communicating with Local Model...</p>
+    </div>
+
+    <!-- Python Logic Runtime -->
+    <py-script src="./auth/main.py?v=4"></py-script>
+
+</body>
+
+</html>

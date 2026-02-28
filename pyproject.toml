@@ -1,0 +1,10 @@
+[project]
+name = "mistral-hackathon-2026-virtualeye"
+version = "0.1.0"
+description = "VirtualEye: Privacy-First CCTV Intelligence & Accessibility"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "requests",
+    "pytest",
+]
