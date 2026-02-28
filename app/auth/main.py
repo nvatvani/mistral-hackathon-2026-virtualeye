@@ -197,25 +197,41 @@ async def verify_model(event):
                 found = True
                 break
                 
+        service_name = "MistralAI Cloud" if "api.mistral.ai" in url else "LMStudio"
+        
         if found:
             indicator.className = "w-4 h-4 rounded-full bg-emerald-500"
             title.innerText = "Connection Successful"
             title.className = "text-lg font-semibold text-emerald-500"
             verify_div.className = "mt-6 p-6 rounded-lg bg-slate-900 border border-emerald-500/30"
-            msg.innerText = f"Successfully connected to LMStudio. Model '{target_model}' is loaded and ready."
+            msg.innerText = f"Successfully connected to {service_name}. Model '{target_model}' is loaded and ready."
         else:
             indicator.className = "w-4 h-4 rounded-full bg-amber-500"
             title.innerText = "Model Not Found"
             title.className = "text-lg font-semibold text-amber-500"
             verify_div.className = "mt-6 p-6 rounded-lg bg-slate-900 border border-amber-500/30"
-            msg.innerText = f"Connected to LMStudio, but model '{target_model}' was not found in the loaded models list."
             
+            # Extract available model IDs for helpful feedback
+            available_models_list = [str(m.get("id")) for m in models] if models else []
+            if available_models_list:
+                list_items = "".join([f"<li>{m}</li>" for m in available_models_list])
+                available_models_html = f"<br/><br/>Available models:<ol class='list-decimal list-inside mt-2 ml-4 max-h-48 overflow-y-auto space-y-1'>{list_items}</ol>"
+            else:
+                available_models_html = "<br/><br/>No models available from this endpoint."
+            
+            msg.innerHTML = f"Connected to {service_name}, but model '{target_model}' was not found in the loaded models list.{available_models_html}"
     except Exception as e:
+        service_name = "MistralAI Cloud" if "api.mistral.ai" in url else "LMStudio"
         indicator.className = "w-4 h-4 rounded-full bg-red-500 animate-pulse"
         title.innerText = "Connection Failed"
         title.className = "text-lg font-semibold text-red-500"
         verify_div.className = "mt-6 p-6 rounded-lg bg-red-900/20 border border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
-        msg.innerText = f"Failed to connect to LMStudio at {url}. Is the server running? Error: {str(e)}"
+        
+        error_msg = str(e)
+        if "HTTP Error 401" in error_msg:
+            msg.innerHTML = f"Failed to connect to {service_name}. <b>HTTP Error 401 (Unauthorized)</b>.<br/><br/>This usually means your API Key is missing or invalid. Please check the 'Use API Key Authentication' box and ensure your key is entered correctly."
+        else:
+            msg.innerText = f"Failed to connect to {service_name} at {url}. Error: {error_msg}"
         
     show_loader(False)
 
@@ -286,47 +302,82 @@ async def handle_image_upload_3(event):
 async def call_lmstudio_vision(messages):
     from pyodide.http import pyfetch
     import json
-    
-    # Read fresh config parameters directly from UI inputs
-    current_url = document.getElementById("config-url").value.strip()
-    current_model = document.getElementById("config-model").value.strip()
-    try:
-        current_tokens = int(document.getElementById("config-tokens").value.strip())
-    except:
-        current_tokens = 1600
-    
-    url = f"{current_url}/chat/completions"
-    
-    payload = {
-        "model": current_model,
-        "messages": messages,
-        "temperature": 0.2,
-        "max_tokens": current_tokens
-    }
-    
-    use_api_key = document.getElementById("use-api-key").checked
-    api_key = document.getElementById("config-apikey").value.strip()
-    
-    req_headers = {"Content-Type": "application/json"}
-    if use_api_key and api_key:
-        req_headers["Authorization"] = f"Bearer {api_key}"
+    import asyncio
     
     try:
-        response = await pyfetch(
-            url,
-            method="POST",
-            headers=req_headers,
-            body=json.dumps(payload)
-        )
+        # Read fresh config parameters directly from UI inputs
+        current_url = document.getElementById("config-url").value.strip()
+        current_model = document.getElementById("config-model").value.strip()
+        try:
+            current_tokens = int(document.getElementById("config-tokens").value.strip())
+        except:
+            current_tokens = 1600
         
-        if not response.ok:
-            raise Exception(f"HTTP Error {response.status}")
+        url = f"{current_url}/chat/completions"
         
-        data_dict = await response.json()
-        console.log("LMStudio API Raw Dct:", data_dict)
+        payload = {
+            "model": current_model,
+            "messages": messages,
+            "temperature": 0.2,
+            "max_tokens": current_tokens
+        }
+    
+        use_api_key = document.getElementById("use-api-key").checked
+        api_key = document.getElementById("config-apikey").value.strip()
+        
+        req_headers = {"Content-Type": "application/json"}
+        if use_api_key and api_key:
+            req_headers["Authorization"] = f"Bearer {api_key}"
+            
+        # Mistral API free tier has a restrictive rate limit (6 req/sec). 
+        # Add a slight delay if we're hitting their cloud endpoint to help avoid HTTP 429 errors.
+        if "api.mistral.ai" in url:
+            await asyncio.sleep(0.4)
+        
+        max_retries = 3
+        base_delay = 1.0  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                response = await pyfetch(
+                    url,
+                    method="POST",
+                    headers=req_headers,
+                    body=json.dumps(payload)
+                )
+                
+                if response.status == 429:
+                    if attempt < max_retries - 1:
+                        wait_time = base_delay * (2 ** attempt)
+                        console.log(f"HTTP 429 Too Many Requests. Retrying in {wait_time} seconds (Attempt {attempt + 1} of {max_retries})...")
+                        import asyncio
+                        await asyncio.sleep(wait_time)
+                        continue
+                    else:
+                        raise Exception(f"HTTP Error {response.status}")
+                    
+                if not response.ok:
+                    raise Exception(f"HTTP Error {response.status}")
+                    
+                data_dict = await response.json()
+                break # Success, exit retry loop
+                
+            except Exception as e:
+                if "HTTP Error 429" in str(e) and attempt < max_retries - 1:
+                    # Catch cases where pyfetch might throw an exception on 429 before we process it
+                    wait_time = base_delay * (2 ** attempt)
+                    console.log(f"Caught HTTP 429 Exception. Retrying in {wait_time} seconds (Attempt {attempt + 1} of {max_retries})...")
+                    import asyncio
+                    await asyncio.sleep(wait_time)
+                    continue
+                elif attempt == max_retries - 1:
+                    raise e # Re-raise if out of retries
+        
+        service_name = "MistralAI Cloud" if "api.mistral.ai" in url else "LMStudio"
+        console.log(f"{service_name} API Raw Dct:", data_dict)
         
         if 'error' in data_dict:
-            return f"LMStudio API returned an error: {data_dict['error']}"
+            return f"{service_name} API returned an error: {data_dict['error']}"
             
         if 'choices' not in data_dict:
             console.error("Missing 'choices' in response:", data_dict)
@@ -334,7 +385,8 @@ async def call_lmstudio_vision(messages):
             
         return data_dict['choices'][0]['message']['content']
     except Exception as e:
-        console.error("LMStudio API Error:", e)
+        service_name = "MistralAI Cloud" if "api.mistral.ai" in url else "LMStudio"
+        console.error(f"{service_name} API Error:", e)
         return f"Error communicating with model: {str(e)}"
 
 async def analyse_cctv(event):
@@ -372,8 +424,21 @@ async def analyse_cctv(event):
     title = document.getElementById("status-title")
     
     # Simple parsing logic based on model prompt
-    result_upper = result_text.upper()[:20]
-    if "RED" in result_upper:
+    result_upper = result_text.upper()[:30]
+    
+    if "HTTP Error 429" in result_text:
+        indicator.className = "w-4 h-4 rounded-full bg-amber-500 animate-pulse"
+        title.innerText = "Error - API Rate Limit Exceeded"
+        title.className = "text-lg font-semibold text-amber-500"
+        result_div.className = "mt-6 p-6 rounded-lg bg-amber-900/20 border border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+        result_text += "\n\n> **Note:** The server is receiving too many requests. Please wait a few moments before trying again and remember to check Mistral AI's Health Status at [https://status.mistral.ai/](https://status.mistral.ai/) if using the MistralAI API."
+    elif "HTTP Error 401" in result_text:
+        indicator.className = "w-4 h-4 rounded-full bg-red-500 animate-pulse"
+        title.innerText = "Error - Unauthorized (Invalid API Key)"
+        title.className = "text-lg font-semibold text-red-500"
+        result_div.className = "mt-6 p-6 rounded-lg bg-red-900/20 border border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+        result_text += "\n\n> **Note:** Your API Key was rejected. Please check the Settings tab and ensure your key is valid and correctly entered."
+    elif "RED" in result_upper:
         indicator.className = "w-4 h-4 rounded-full bg-red-500 animate-pulse"
         title.innerText = "Critical Event Detected"
         title.className = "text-lg font-semibold text-red-500"
@@ -421,6 +486,27 @@ async def analyse_accessibility(event):
     
     result_div = document.getElementById("access-result")
     result_div.classList.remove("hidden")
+    
+    header = document.getElementById("access-title")
+    
+    if "HTTP Error 429" in result_text:
+        header.innerText = "Error - API Rate Limit Exceeded"
+        header.className = "text-lg font-semibold text-amber-500 mb-2"
+        result_div.className = "mt-6 p-6 rounded-lg bg-amber-900/20 border border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)] max-w-3xl mx-auto"
+        result_text += "\n\n> **Note:** The server is receiving too many requests. Please wait a few moments before trying again and remember to check Mistral AI's Health Status at [https://status.mistral.ai/](https://status.mistral.ai/) if using the MistralAI API."
+    elif "HTTP Error 401" in result_text:
+        header.innerText = "Error - Unauthorized (Invalid API Key)"
+        header.className = "text-lg font-semibold text-red-500 mb-2"
+        result_div.className = "mt-6 p-6 rounded-lg bg-red-900/20 border border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)] max-w-3xl mx-auto"
+        result_text += "\n\n> **Note:** Your API Key was rejected. Please check the Settings tab and ensure your key is valid and correctly entered."
+    elif "Error" in result_text:
+        header.innerText = "Error"
+        header.className = "text-lg font-semibold text-red-500 mb-2"
+        result_div.className = "mt-6 p-6 rounded-lg bg-red-900/20 border border-red-500 max-w-3xl mx-auto"
+    else:
+        header.innerText = "Scene Description"
+        header.className = "text-lg font-semibold text-cyan-400 mb-2"
+        result_div.className = "mt-6 p-6 rounded-lg bg-slate-900 border border-slate-700 max-w-3xl mx-auto"
     
     # Render markdown via marked.js
     import js
