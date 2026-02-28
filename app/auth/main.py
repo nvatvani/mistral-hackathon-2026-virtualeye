@@ -21,7 +21,7 @@ state = {
     }
 }
 
-def show_loader(show=True, loading_text="Communicating with Local Model..."):
+def show_loader(show=True, loading_text="Communicating with Model..."):
     el = document.getElementById("loading-overlay")
     text_el = document.getElementById("loading-text")
     if text_el:
@@ -146,13 +146,22 @@ def switch_tab_cctv(event):
 def switch_tab_blind(event):
     switch_tab('blind')
 
+def toggle_api_key(event):
+    checkbox = document.getElementById("use-api-key")
+    container = document.getElementById("api-key-container")
+    
+    if checkbox.checked:
+        container.classList.remove("hidden")
+    else:
+        container.classList.add("hidden")
+
 async def verify_model(event):
     # Dynamically read current UI settings
     current_url = document.getElementById("config-url").value.strip()
     current_model = document.getElementById("config-model").value.strip()
     
     show_loader(True, "Verifying model connection...")
-    from js import fetch
+    from pyodide.http import pyfetch
     
     url = f"{current_url}/models"
     target_model = current_model
@@ -164,21 +173,27 @@ async def verify_model(event):
     
     verify_div.classList.remove("hidden")
     
+    use_api_key = document.getElementById("use-api-key").checked
+    api_key = document.getElementById("config-apikey").value.strip()
+    
+    headers = {}
+    if use_api_key and api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    
     try:
-        response = await fetch(url)
+        response = await pyfetch(url, method="GET", headers=headers)
         if not response.ok:
             raise Exception(f"HTTP Error {response.status}")
             
         data = await response.json()
         
-        # 'data' should contain a list of models in data.data
-        models = data.data
+        # 'data' should contain a list of models under the "data" key
+        models = data.get("data", [])
         found = False
         
-        # Iterate through Pyodide proxy array
-        for i in range(len(models)):
-            model = models[i]
-            if str(model.id) == target_model:
+        # Iterate through Python list
+        for model in models:
+            if str(model.get("id")) == target_model:
                 found = True
                 break
                 
@@ -232,16 +247,32 @@ async def handle_image_upload(event, slot):
         preview.src = data_url
         preview.classList.remove("hidden")
         
+        icon = document.getElementById(f"label-icon-{slot}")
+        text = document.getElementById(f"label-text-{slot}")
+        if icon:
+            icon.classList.add("opacity-0")
+        if text:
+            text.classList.add("opacity-0")
+            if slot == 1:
+                text.innerText = "Change Image 1 (Before)"
+            elif slot == 2:
+                text.innerText = "Change Image 2 (After)"
+            elif slot == 3:
+                text.innerText = "Change Reference Image"
+        
         # Enable buttons if ready
         if slot in (1, 2) and state["images"][1] and state["images"][2]:
-            btn = document.getElementById("analyze-cctv-btn")
+            btn = document.getElementById("analyse-cctv-btn")
             btn.disabled = False
             btn.classList.remove("button-disabled", "opacity-50", "cursor-not-allowed")
             
         if slot == 3 and state["images"][3]:
-            btn = document.getElementById("analyze-access-btn")
+            btn = document.getElementById("analyse-access-btn")
             btn.disabled = False
             btn.classList.remove("button-disabled", "opacity-50", "cursor-not-allowed")
+            
+        # Reset input value to allow re-selection of same file if needed
+        event.target.value = ""
 
 async def handle_image_upload_1(event):
     await handle_image_upload(event, 1)
@@ -273,11 +304,18 @@ async def call_lmstudio_vision(messages):
         "max_tokens": current_tokens
     }
     
+    use_api_key = document.getElementById("use-api-key").checked
+    api_key = document.getElementById("config-apikey").value.strip()
+    
+    req_headers = {"Content-Type": "application/json"}
+    if use_api_key and api_key:
+        req_headers["Authorization"] = f"Bearer {api_key}"
+    
     try:
         response = await pyfetch(
             url,
             method="POST",
-            headers={"Content-Type": "application/json"},
+            headers=req_headers,
             body=json.dumps(payload)
         )
         
@@ -297,19 +335,19 @@ async def call_lmstudio_vision(messages):
         return data_dict['choices'][0]['message']['content']
     except Exception as e:
         console.error("LMStudio API Error:", e)
-        return f"Error communicating with local model: {str(e)}"
+        return f"Error communicating with model: {str(e)}"
 
-async def analyze_cctv(event):
+async def analyse_cctv(event):
     if not state["images"][1] or not state["images"][2]:
         return
         
     model_name = document.getElementById("config-model").value.strip()
-    show_loader(True, f"Communicating with Local Model '{model_name}'...")
+    show_loader(True, f"Communicating with Model '{model_name}'...")
     
     messages = [
         {
             "role": "system",
-            "content": "You are a cutting-edge security AI designed for temporal reasoning on CCTV frames. You will receive two sequential images. Analyze the state change (delta) between them. If you detect an unauthorized entry, breach, or significant event, output your response starting with 'RED (Significant Event) - ' followed by a brief analytical explanation. Otherwise, output 'GREEN (Nominal) - ' followed by a brief description of the normal change."
+            "content": "You are a cutting-edge security AI designed for temporal reasoning on CCTV frames. You will receive two sequential images. Analyse the state change (delta) between them. If you detect an unauthorized entry, breach, or significant event, output your response starting with 'RED (Significant Event) - ' followed by a brief analytical explanation. If the change is ambiguous, obscured, or uncertain, output 'AMBER (Uncertain) - ' followed by your reasoning. Otherwise, output 'GREEN (Nominal) - ' followed by a brief description of the normal change."
         },
         {
             "role": "user",
@@ -334,11 +372,17 @@ async def analyze_cctv(event):
     title = document.getElementById("status-title")
     
     # Simple parsing logic based on model prompt
-    if "RED" in result_text.upper()[:20]:
+    result_upper = result_text.upper()[:20]
+    if "RED" in result_upper:
         indicator.className = "w-4 h-4 rounded-full bg-red-500 animate-pulse"
         title.innerText = "Critical Event Detected"
         title.className = "text-lg font-semibold text-red-500"
         result_div.className = "mt-6 p-6 rounded-lg bg-red-900/20 border border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+    elif "ERROR" in result_upper or "AMBER" in result_upper:
+        indicator.className = "w-4 h-4 rounded-full bg-amber-500 animate-pulse"
+        title.innerText = "Uncertain State"
+        title.className = "text-lg font-semibold text-amber-500"
+        result_div.className = "mt-6 p-6 rounded-lg bg-amber-900/20 border border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]"
     else:
         indicator.className = "w-4 h-4 rounded-full bg-green-500"
         title.innerText = "Nominal State"
@@ -350,12 +394,12 @@ async def analyze_cctv(event):
     html_output = js.marked.parse(result_text)
     document.getElementById("cctv-analysis-text").innerHTML = html_output
 
-async def analyze_accessibility(event):
+async def analyse_accessibility(event):
     if not state["images"][3]:
         return
         
     model_name = document.getElementById("config-model").value.strip()
-    show_loader(True, f"Communicating with Local Model '{model_name}'...")
+    show_loader(True, f"Communicating with Model '{model_name}'...")
     
     messages = [
         {
@@ -397,5 +441,6 @@ js.window.verify_model = pyodide.ffi.create_proxy(verify_model)
 js.window.handle_image_upload_1 = pyodide.ffi.create_proxy(handle_image_upload_1)
 js.window.handle_image_upload_2 = pyodide.ffi.create_proxy(handle_image_upload_2)
 js.window.handle_image_upload_3 = pyodide.ffi.create_proxy(handle_image_upload_3)
-js.window.analyze_cctv = pyodide.ffi.create_proxy(analyze_cctv)
-js.window.analyze_accessibility = pyodide.ffi.create_proxy(analyze_accessibility)
+js.window.analyse_cctv = pyodide.ffi.create_proxy(analyse_cctv)
+js.window.analyse_accessibility = pyodide.ffi.create_proxy(analyse_accessibility)
+js.window.toggle_api_key = pyodide.ffi.create_proxy(toggle_api_key)

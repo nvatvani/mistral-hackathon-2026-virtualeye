@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VirtualEye Dashboard</title>
+    <link rel="icon" type="image/png" href="./static/m-boxed-black.png">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -37,8 +39,12 @@
     <!-- Navbar -->
     <nav class="bg-slate-800 border-b border-indigo-500/30 p-4">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-                <span class="mr-2">👁️</span>VirtualEye
+            <h1 class="text-2xl font-bold flex items-center">
+                <span class="mr-2 not-italic text-white" style="-webkit-text-fill-color: initial;">👁️</span>
+                <span
+                    class="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">VirtualEye</span>
+                <span class="text-slate-400 text-lg font-normal mx-2">with</span>
+                <img src="./static/mistral-logo-color-white.svg" alt="Mistral AI" class="h-5 object-contain">
             </h1>
             <div id="nav-actions" class="hidden">
                 <span id="user-display" class="text-sm text-slate-400 mr-4"></span>
@@ -98,14 +104,18 @@
         <div id="active-view" class="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-lg min-h-[500px]">
             <!-- Settings content structure -->
             <div id="settings-view">
-                <h3 class="text-xl font-semibold mb-2">LMStudio Connection Settings</h3>
-                <p class="text-slate-400 mb-6 text-sm">Validate your connection to the local LMStudio instance and
-                    ensure the correct model is loaded.</p>
+                <h3 class="text-xl font-semibold mb-2">Local LMStudio or Cloud-Based MistralAI Connection Settings</h3>
+                <p class="text-slate-400 mb-6 text-sm">Validate your connection to either the Local LMStudio instance or
+                    the Cloud-Based <a href="https://api.mistral.ai">Mistral AI - https://api.mistral.ai</a>; and ensure
+                    that the correct model is specified.</p>
+                <p class="text-slate-400 mb-6 text-sm">Click on <b>Verify Connection</b> to validate your access to the
+                    model.</p>
 
                 <div class="bg-slate-900/50 rounded-lg p-6 border border-slate-700 mb-6 max-w-2xl">
                     <div class="grid gap-4 mb-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-400 mb-1">LMStudio Endpoint URL</label>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">LMStudio/MistralAI Endpoint
+                                URL</label>
                             <input type="text" id="config-url"
                                 class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-slate-300 font-mono focus:border-emerald-500 focus:outline-none transition-colors">
                         </div>
@@ -117,9 +127,23 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-400 mb-1">Max Response Tokens</label>
                             <input type="number" id="config-tokens"
-                                class="w-full md:w-1/2 bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-slate-300 font-mono focus:border-emerald-500 focus:outline-none transition-colors">
+                                class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-slate-300 font-mono focus:border-emerald-500 focus:outline-none transition-colors">
                         </div>
                     </div>
+
+                    <div class="mb-6">
+                        <label class="flex items-center space-x-3 cursor-pointer mb-2">
+                            <input type="checkbox" id="use-api-key" py-change="toggle_api_key"
+                                class="form-checkbox h-5 w-5 text-emerald-500 rounded border-slate-600 bg-slate-800 focus:ring-emerald-500 focus:ring-offset-slate-900">
+                            <span class="text-slate-300 font-medium">Use API Key Authentication</span>
+                        </label>
+                        <div id="api-key-container" class="hidden mt-3">
+                            <label class="block text-sm font-medium text-slate-400 mb-1">API Key</label>
+                            <input type="password" id="config-apikey" placeholder="Enter your API Key..."
+                                class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-slate-300 font-mono focus:border-emerald-500 focus:outline-none transition-colors">
+                        </div>
+                    </div>
+
                     <button id="verify-btn" py-click="verify_model"
                         class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-medium transition-colors">
                         Verify Connection
@@ -135,40 +159,54 @@
                 </div>
             </div>
 
-            <!-- Virtual Eye content structure -->
+            <!-- VirtualEye content structure -->
             <div id="cctv-view" class="hidden">
                 <h3 class="text-xl font-semibold mb-2">Temporal Analysis</h3>
-                <p class="text-slate-400 mb-6 text-sm">Upload two sequential frames to analyze the delta state and
+                <p class="text-slate-400 mb-6 text-sm">Upload two sequential frames to analyse the delta state and
                     detect significant events.</p>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div
-                        class="border border-dashed border-slate-600 rounded-lg p-8 text-center bg-slate-900/50 hover:bg-slate-900 transition-colors">
+                    <div class="relative w-full h-full">
                         <input type="file" id="image1" accept="image/*" class="hidden"
                             py-change="handle_image_upload_1">
-                        <label for="image1" class="cursor-pointer flex flex-col items-center">
-                            <span class="text-4xl mb-2">📸</span>
-                            <span class="text-slate-300 font-medium">Select Image 1 (Before)</span>
+                        <label for="image1"
+                            class="cursor-pointer border border-dashed border-slate-600 rounded-lg p-8 text-center bg-slate-900/50 hover:bg-slate-900 transition-colors relative group block min-h-[200px] flex items-center justify-center h-full">
+                            <div
+                                class="flex flex-col items-center justify-center absolute inset-0 z-10 w-full h-full p-4 transition-opacity group-hover:opacity-100">
+                                <span id="label-icon-1"
+                                    class="text-4xl mb-2 transition-opacity group-hover:opacity-100">📸</span>
+                                <span id="label-text-1"
+                                    class="text-slate-300 font-medium bg-slate-900/50 px-2 rounded transition-opacity group-hover:opacity-100">Select
+                                    Image 1 (Before)</span>
+                            </div>
+                            <img id="preview1"
+                                class="max-h-48 mx-auto hidden rounded shadow relative z-0 pointer-events-none">
                         </label>
-                        <img id="preview1" class="mt-4 max-h-48 mx-auto hidden rounded shadow">
                     </div>
 
-                    <div
-                        class="border border-dashed border-slate-600 rounded-lg p-8 text-center bg-slate-900/50 hover:bg-slate-900 transition-colors">
+                    <div class="relative w-full h-full">
                         <input type="file" id="image2" accept="image/*" class="hidden"
                             py-change="handle_image_upload_2">
-                        <label for="image2" class="cursor-pointer flex flex-col items-center">
-                            <span class="text-4xl mb-2">📸</span>
-                            <span class="text-slate-300 font-medium">Select Image 2 (After)</span>
+                        <label for="image2"
+                            class="cursor-pointer border border-dashed border-slate-600 rounded-lg p-8 text-center bg-slate-900/50 hover:bg-slate-900 transition-colors relative group block min-h-[200px] flex items-center justify-center h-full">
+                            <div
+                                class="flex flex-col items-center justify-center absolute inset-0 z-10 w-full h-full p-4 transition-opacity group-hover:opacity-100">
+                                <span id="label-icon-2"
+                                    class="text-4xl mb-2 transition-opacity group-hover:opacity-100">📸</span>
+                                <span id="label-text-2"
+                                    class="text-slate-300 font-medium bg-slate-900/50 px-2 rounded transition-opacity group-hover:opacity-100">Select
+                                    Image 2 (After)</span>
+                            </div>
+                            <img id="preview2"
+                                class="max-h-48 mx-auto hidden rounded shadow relative z-0 pointer-events-none">
                         </label>
-                        <img id="preview2" class="mt-4 max-h-48 mx-auto hidden rounded shadow">
                     </div>
                 </div>
 
-                <button id="analyze-cctv-btn" py-click="analyze_cctv"
+                <button id="analyse-cctv-btn" py-click="analyse_cctv"
                     class="button-disabled w-full md:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium transition-colors my-4 float-right"
                     disabled>
-                    Analyze Delta
+                    Analyse Delta
                 </button>
                 <div class="clear-both"></div>
 
@@ -185,23 +223,30 @@
 
             <!-- Accessibility content structure -->
             <div id="blind-view" class="hidden">
-                <h3 class="text-xl font-semibold mb-2">Spatial Audio Describer</h3>
+                <h3 class="text-xl font-semibold mb-2">Spatial Describer</h3>
                 <p class="text-slate-400 mb-6 text-sm">Upload a software UI screenshot or physical room image for
                     structural description.</p>
 
-                <div
-                    class="border border-dashed border-slate-600 rounded-lg p-8 text-center bg-slate-900/50 hover:bg-slate-900 transition-colors max-w-2xl mx-auto mb-6">
+                <div class="max-w-2xl mx-auto mb-6 relative w-full h-full">
                     <input type="file" id="image-access" accept="image/*" class="hidden"
                         py-change="handle_image_upload_3">
-                    <label for="image-access" class="cursor-pointer flex flex-col items-center">
-                        <span class="text-4xl mb-2">🏞️</span>
-                        <span class="text-slate-300 font-medium">Select Reference Image</span>
+                    <label for="image-access"
+                        class="cursor-pointer border border-dashed border-slate-600 rounded-lg p-8 text-center bg-slate-900/50 hover:bg-slate-900 transition-colors relative group block min-h-[300px] flex items-center justify-center w-full h-full">
+                        <div
+                            class="flex flex-col items-center justify-center absolute inset-0 z-10 w-full h-full p-4 transition-opacity group-hover:opacity-100">
+                            <span id="label-icon-3"
+                                class="text-4xl mb-2 transition-opacity group-hover:opacity-100">🏞️</span>
+                            <span id="label-text-3"
+                                class="text-slate-300 font-medium bg-slate-900/50 px-2 rounded transition-opacity group-hover:opacity-100">Select
+                                Reference Image</span>
+                        </div>
+                        <img id="preview3"
+                            class="max-h-64 mx-auto hidden rounded shadow relative z-0 pointer-events-none">
                     </label>
-                    <img id="preview3" class="mt-4 max-h-64 mx-auto hidden rounded shadow">
                 </div>
 
                 <div class="flex justify-center">
-                    <button id="analyze-access-btn" py-click="analyze_accessibility"
+                    <button id="analyse-access-btn" py-click="analyse_accessibility"
                         class="button-disabled px-8 py-3 bg-cyan-600 hover:bg-cyan-700 rounded-lg font-medium transition-colors mb-4"
                         disabled>
                         Generate Spatial Description
@@ -223,11 +268,11 @@
     <div id="loading-overlay"
         class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
         <div class="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-4"></div>
-        <p id="loading-text" class="text-indigo-400 font-medium animate-pulse">Communicating with Local Model...</p>
+        <p id="loading-text" class="text-indigo-400 font-medium animate-pulse">Communicating with Model...</p>
     </div>
 
     <!-- Python Logic Runtime -->
-    <py-script src="./auth/main.py?v=4"></py-script>
+    <py-script src="./auth/main.py?v=5"></py-script>
 
 </body>
 
