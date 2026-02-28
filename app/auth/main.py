@@ -11,7 +11,7 @@ state = {
     "config": {
         "lmstudio_url": "http://192.168.1.3:1234/v1",
         "model_name": "mistralai/ministral-3-14b-reasoning",
-        "max_tokens": 800
+        "max_tokens": 1600
     },
     "auth_passed": False,
     "images": {
@@ -44,7 +44,7 @@ async def load_config():
         data = await response.json()
         state["config"]["lmstudio_url"] = str(data.lmstudio_url)
         state["config"]["model_name"] = str(data.model_name)
-        state["config"]["max_tokens"] = int(data.get("max_tokens", 800))
+        state["config"]["max_tokens"] = int(data.get("max_tokens", 1600))
         console.log("Config loaded:", state["config"])
         document.getElementById("config-url").value = state["config"]["lmstudio_url"]
         document.getElementById("config-model").value = state["config"]["model_name"]
@@ -52,9 +52,9 @@ async def load_config():
     except Exception as e:
         console.log(f"Error loading config: {e}")
         state["config"] = {
-            "lmstudio_url": "http://192.168.1.8:1234/v1", 
+            "lmstudio_url": "http://192.168.1.3:1234/v1", 
             "model_name": "mistralai/ministral-3-14b-reasoning",
-            "max_tokens": 800
+            "max_tokens": 1600
         }
         document.getElementById("config-url").value = state["config"]["lmstudio_url"]
         document.getElementById("config-model").value = state["config"]["model_name"]
@@ -262,7 +262,7 @@ async def call_lmstudio_vision(messages):
     try:
         current_tokens = int(document.getElementById("config-tokens").value.strip())
     except:
-        current_tokens = 800
+        current_tokens = 1600
     
     url = f"{current_url}/chat/completions"
     
