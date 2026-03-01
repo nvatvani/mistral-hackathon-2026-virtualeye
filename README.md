@@ -259,5 +259,8 @@ srv  update_slots: all slots are idle
    - Once connected to the API Server, you can find the list of available models to choose from by specifying nothing in the model name field and clicking on the **Verify Connection** button. You will get a response indicating the available models to choose from:
    ![Available Models](docs/assets/5-available-models.png)
 
+5. I learn best by watching than by reading. Where can I find a video tutorial of this project?
+   - You can find a video tutorial of this project on [YouTube](https://img.youtube.com/vi/DSU9kQWGdK4/0.jpg): [![YouTube](https://img.youtube.com/vi/DSU9kQWGdK4/0.jpg)](https://youtu.be/DSU9kQWGdK4).
+
 ## 📄 License
 This project is licensed under the **Apache 2.0 License** - see the [LICENSE](LICENSE) file for details.
