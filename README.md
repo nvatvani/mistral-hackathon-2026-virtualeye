@@ -66,12 +66,14 @@ flowchart TD
     &
     API Key| CCTV
     Config -->|Load Defaults| Settings
-    Vision -->|Local/Cloud| Response[LLM Response]
+    VisionReasoning[Vision
+    +
+    Reasoning] -->|Local/Cloud| Response[LLM Response]
     Response -->|Markdown| Render[Render in UI]
     App -->|Switch Tab| Blind[Blind Accessibility Assistant]
-    Blind -->|Upload Image| Vision
+    Blind -->|Upload Image| VisionReasoning
     App -->|Switch Tab| CCTV[CCTV Temporal Reasoning]
-    CCTV -->|Upload Images| Vision
+    CCTV -->|Upload Images| VisionReasoning
 ```
 
 ### Repository Structure
@@ -260,7 +262,7 @@ srv  update_slots: all slots are idle
    ![Available Models](docs/assets/5-available-models.png)
 
 5. I learn best by watching than by reading. Where can I find a video tutorial of this project?
-   - You can find a video tutorial of this project on [YouTube](https://img.youtube.com/vi/DSU9kQWGdK4/0.jpg): [![YouTube](https://img.youtube.com/vi/DSU9kQWGdK4/0.jpg)](https://youtu.be/DSU9kQWGdK4).
+   - You can find a video tutorial of this project on [YouTube](https://youtu.be/DSU9kQWGdK4): [![YouTube](https://img.youtube.com/vi/DSU9kQWGdK4/0.jpg)](https://youtu.be/DSU9kQWGdK4).
 
 ## 📄 License
 This project is licensed under the **Apache 2.0 License** - see the [LICENSE](LICENSE) file for details.
