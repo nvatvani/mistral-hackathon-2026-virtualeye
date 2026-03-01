@@ -172,5 +172,8 @@ mistral-hackathon-2026-virtualeye/
    
    ![LMStudio Bug](docs/assets/4-lmstudio-error-400.png)
 
+3. Where can I fine the sample images used in this project?
+   - You can find the sample images in the [docs/samples](docs/samples) directory. These images originated from: https://www.youtube.com/watch?v=u_EwrAsv3r4
+
 ## 📄 License
 This project is licensed under the **Apache 2.0 License** - see the [LICENSE](LICENSE) file for details.
