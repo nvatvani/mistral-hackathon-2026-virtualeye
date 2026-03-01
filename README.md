@@ -40,6 +40,40 @@ By executing Large Language Models at the edge (locally on the user's hardware) 
 - **Authentication:** Strict login requirement per session. Credentials are securely managed via a plain-text file storing usernames and hashed passwords (client-side validation).
 - **Hosting & Deployment:** The application relies entirely on static resources, allowing it to be continuously built and deployed via **GitHub Actions** and hosted on **[GitHub Pages](https://nvatvani.github.io/mistral-hackathon-2026-virtualeye/)**.
 
+### System Flows
+
+- **Data Flow:**
+```mermaid
+flowchart TD
+    Github[Github Pages] -->|Load Webapp| Client[Client Browser]
+    Client <-->|API Calls from
+    LNA-capable browsers| LMStudio[Local LLM
+    served by
+    LMStudio]
+    Client <-->|API Calls from
+    any browser| Mistral[api.mistral.ai]
+```
+
+- **Application Flow:**
+```mermaid
+flowchart TD
+    User[User Login] -->|Valid Credentials| App[App Container Loaded]
+    App -->| | Config[config.json]
+    Settings[Settings & Status] -->|Configure Endpoint
+    &
+    API Key| Blind
+    Settings -->|Configure Endpoint
+    &
+    API Key| CCTV
+    Config -->|Load Defaults| Settings
+    Vision -->|Local/Cloud| Response[LLM Response]
+    Response -->|Markdown| Render[Render in UI]
+    App -->|Switch Tab| Blind[Blind Accessibility Assistant]
+    Blind -->|Upload Image| Vision
+    App -->|Switch Tab| CCTV[CCTV Temporal Reasoning]
+    CCTV -->|Upload Images| Vision
+```
+
 ### Repository Structure
 
 ```text
@@ -122,7 +156,7 @@ mistral-hackathon-2026-virtualeye/
    ![Settings & Status](docs/assets/1-settings-and-status.png)
    - Use the **Settings & Status** tab to map your desired API Endpoint (LMStudio vs MistralAI Cloud API) and input your Bearer API Key if utilizing Mistral La Plateforme. Click **Verify Connection** to test network continuity before attempting to use the features!
       - **LMStudio:**
-         - Make sure you are using a web browser that supports LNA (Local Network Access) such as Microsoft Edge or Google Chrome.
+         - Make sure you are using a web browser that supports LNA (Local Network Access) such as [Microsoft Edge](https://learn.microsoft.com/en-us/deployedge/ms-edge-local-network-access) or [Google Chrome](https://developer.chrome.com/blog/local-network-access/) that were both made LNA-compatible in Q4-2025.
          
          ![Allow Local Network Access](docs/assets/1-lna-enabled-browser.png)
 
@@ -133,6 +167,8 @@ mistral-hackathon-2026-virtualeye/
          I will not be going through the setup of LMStudio as it is beyond the scope of this hackathon. However, you can set up LMStudio to either require or omit API keys as described in the [LMStudio documentation](https://lmstudio.ai/docs/developer/core/server).
          If you are using a web browser that does not support LNA, you can either run the application locally as described in **5. Start the local server**, or use **MistralAI Cloud API** settings instead.
       - **MistralAI Cloud API:**
+         
+         Unlike with LMStudio, using the MistralAI Cloud API does not require LNA-enabled browsers, which means you should be able to use the VirtualEye webapp even from your smartphone.
          ![MistralAI Cloud API Settings & Status](docs/assets/1-mistralai-verified-settings-and-status.png)
          I will not be going through the provisioning of the MistralAI Cloud API key because that process is already documented on the [MistralAI website](https://docs.mistral.ai/getting-started/quickstart).
 
