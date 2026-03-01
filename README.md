@@ -1,4 +1,4 @@
-# VirtualEye: Privacy-First CCTV Intelligence & Accessibility
+# VirtualEye: Privacy-First CCTV Intelligence & Accessibility for the Visually Impaired
 
 Welcome to **VirtualEye**, a concept project built for the 2026 Hackathon showcasing real-world, high-impact use-cases of local Large Language Models (LLMs). This project focuses on delivering powerful, privacy-preserving AI tools directly at the edge, requiring no cloud dependencies so that privacy is maximised.
 
@@ -118,25 +118,29 @@ mistral-hackathon-2026-virtualeye/
       ![Login Screen](docs/assets/1-login.png)
 
 2. **Login & Configuration:**
-   - Once logged-in, be ***VERY CAREFUL*** about refreshing the page because this is a **stateless** application and you will ***lose your session***, forcing you to login again.
+   - Once logged in, be ***VERY CAREFUL*** about refreshing the page because this is a **stateless** application. You will ***lose your session*** and be forced to log in again.
    ![Settings & Status](docs/assets/1-settings-and-status.png)
    - Use the **Settings & Status** tab to map your desired API Endpoint (LMStudio vs MistralAI Cloud API) and input your Bearer API Key if utilizing Mistral La Plateforme. Click **Verify Connection** to test network continuity before attempting to use the features!
       - **LMStudio:**
-         - Make sure you are using a Web-Browser that supports LNA (Local Network Access) like Microsoft Edge / Google Chrome.
+         - Make sure you are using a web browser that supports LNA (Local Network Access) such as Microsoft Edge or Google Chrome.
+         
          ![Allow Local Network Access](docs/assets/1-lna-enabled-browser.png)
 
-         - An LNA-enabled browser will allow you to access the LMStudio API running on your local network.![LMStudio Verified Settings & Status](docs/assets/1-lmstudio-verified-settings-and-status.png)
-         I will not be going through the setup of LMStudio as it is beyond the scope of this hackathon. However, I can indicate that you can setup LMStudio to either employ or omit API-keys as described in the [LMStudio documentation](https://lmstudio.ai/docs/developer/core/server).
-         If you are using a web-browser that does not support LNA, can either run the application locally as described in  **5. Start the local server** or use **MistralAI Cloud API** settings instead.
+         - An LNA-enabled browser will allow you to access the LMStudio API running on your local network.
+
+         ![LMStudio Verified Settings & Status](docs/assets/1-lmstudio-verified-settings-and-status.png)
+
+         I will not be going through the setup of LMStudio as it is beyond the scope of this hackathon. However, you can set up LMStudio to either require or omit API keys as described in the [LMStudio documentation](https://lmstudio.ai/docs/developer/core/server).
+         If you are using a web browser that does not support LNA, you can either run the application locally as described in **5. Start the local server**, or use **MistralAI Cloud API** settings instead.
       - **MistralAI Cloud API:**
          ![MistralAI Cloud API Settings & Status](docs/assets/1-mistralai-verified-settings-and-status.png)
-         I will not be going through the provisioning of the MistralAI Cloud API-key because that process is already documented on the [MistralAI website](https://docs.mistral.ai/getting-started/quickstart).
+         I will not be going through the provisioning of the MistralAI Cloud API key because that process is already documented on the [MistralAI website](https://docs.mistral.ai/getting-started/quickstart).
 
 3. **Blind Accessibility Assistant:**
    - Once the LLM connectivity is verified, navigate to the **Blind Accessibility Assistant** tab.
    ![Upload Image](docs/assets/2-blind-accessibility-assistant.png)
-   - Click on the **Upload Image** button to upload an image.
-   - The image will be displayed in the image container.
+   - Click on the upload area to select and upload a reference image.
+   - The image will be displayed in the core container.
    ![Preview Uploaded Image](docs/assets/2-blind-accessibility-assistant-pre-analysis.png)
    - Click on the **Generate Spatial Description** button and wait for the model to respond.
    ![Generating Spatial Description](docs/assets/2-blind-accessibility-assistant-ongoing-analysis.png)
@@ -146,8 +150,8 @@ mistral-hackathon-2026-virtualeye/
 4. **CCTV Temporal Reasoning:**
    - Once the LLM connectivity is verified, navigate to the **CCTV Temporal Reasoning** tab.
    ![Upload Images](docs/assets/3-cctv-temporal-reasoning.png)
-   - Click on the **Upload Image** button to upload an image.
-   - The images will be displayed in the respective image containers.
+   - Click on the upload areas to supply your "Before" and "After" images.
+   - The images will be displayed in their respective image containers.
    ![Preview Uploaded Images](docs/assets/3-cctv-temporal-reasoning-pre-analysis.png)
    - Click on the **Analyse Delta** button and wait for the model to respond.
    ![Waiting for Model Response](docs/assets/3-cctv-temporal-reasoning-ongoing-analysis.png)
@@ -156,13 +160,17 @@ mistral-hackathon-2026-virtualeye/
 
 ### Frequently Asked Questions (FAQ)
 
-1. Sometimes MistralAI Cloud API returns an error message "429 Too Many Requests". What should I do?
-   - Wait for some time and try again.
+1. Sometimes the MistralAI Cloud API returns a "429 Too Many Requests" error. What should I do?
+   - Wait for a few moments and try again.
    ![MistralAI HTTP Error 429](docs/assets/4-mistralai-error-429.png)
-   - Check https://status.mistral.ai/ to rule out any ongoing issues with the MistralAI Cloud API.![MistralAI Status](docs/assets/4-mistralai-status.png)
+   - Check https://status.mistral.ai/ to rule out any ongoing issues with the MistralAI Cloud services.
+   
+   ![MistralAI Status](docs/assets/4-mistralai-status.png)
 
-2. Sometime LMStudio returns an error "400 Bad Request". What should I do?
-   - This seems to be a bug with LMStudio. A known workaround is to eject the model, load it again, and then press the **Analyse Delta** or **Generate Spatial Description** buttons again.![LMStudio Bug](docs/assets/4-lmstudio-error-400.png)
+2. Sometimes LMStudio returns a "400 Bad Request" error. What should I do?
+   - This seems to be a bug with LMStudio. A known workaround is to eject the model, load it again, and then press the **Analyse Delta** or **Generate Spatial Description** buttons again.
+   
+   ![LMStudio Bug](docs/assets/4-lmstudio-error-400.png)
 
 ## 📄 License
 This project is licensed under the **Apache 2.0 License** - see the [LICENSE](LICENSE) file for details.
