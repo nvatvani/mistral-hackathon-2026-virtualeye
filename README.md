@@ -172,8 +172,12 @@ mistral-hackathon-2026-virtualeye/
    
    ![LMStudio Bug](docs/assets/4-lmstudio-error-400.png)
 
-3. Where can I fine the sample images used in this project?
+3. Where can I find the sample images used in this project?
    - You can find the sample images in the [docs/samples](docs/samples) directory. These images originated from: https://www.youtube.com/watch?v=u_EwrAsv3r4
+
+4. Once connected to the Server with/without an API Key, how do I know what models are available to choose from?
+   - Once connected to the API Server, you can find the list of available models to choose from by specifying nothing in the model name field and clicking on the **Verify Connection** button. You will get a respose indicating the available models to choose from:
+   ![Available Models](docs/assets/5-available-models.png)
 
 ## 📄 License
 This project is licensed under the **Apache 2.0 License** - see the [LICENSE](LICENSE) file for details.
