@@ -229,7 +229,7 @@ async def verify_model(event):
         
         error_msg = str(e)
         if "HTTP Error 401" in error_msg:
-            msg.innerHTML = f"Failed to connect to {service_name}. <b>HTTP Error 401 (Unauthorized)</b>.<br/><br/>This usually means your API Key is missing or invalid. Please check the 'Use API Key Authentication' box and ensure your key is entered correctly."
+            msg.innerHTML = f"Failed to connect to {service_name}. <b>HTTP Error 401 (Unauthorised)</b>.<br/><br/>This usually means your API Key is missing or invalid. Please check the 'Use API Key Authentication' box and ensure your key is entered correctly."
         else:
             msg.innerText = f"Failed to connect to {service_name} at {url}. Error: {error_msg}"
         

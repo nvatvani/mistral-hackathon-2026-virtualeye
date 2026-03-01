@@ -14,7 +14,7 @@ An assistant designed to help visually impaired users navigate complex software 
 ### 2. The "VirtualEye" CCTV Incident Reporter
 A portal that performs **Temporal Reasoning** on still frames. Instead of describing images in isolation, the model analyses the delta (change) between them to infer critical events.
 - **The Logic:** *"In Image 1, the gate is closed. In Image 2, the gate is open and a person is running."*
-- **Output:** `RED (Significant Event) – Unauthorized entry detected via gate breach.`
+- **Output:** `RED (Significant Event) – Unauthorised entry detected via gate breach.`
 - **Hackathon Hook:** *"Local, private security intelligence."*
 
 *(Note: While VirtualEye is firmly designed to champion edge computing to guarantee data privacy, the application also fully supports routing requests to Mistral's global Cloud API endpoints (`api.mistral.ai`) via the internal Settings UI for testing, benchmarking, or scalable deployments).*
@@ -176,7 +176,7 @@ mistral-hackathon-2026-virtualeye/
    - You can find the sample images in the [docs/samples](docs/samples) directory. These images originated from: https://www.youtube.com/watch?v=u_EwrAsv3r4
 
 4. Once connected to the Server with/without an API Key, how do I know what models are available to choose from?
-   - Once connected to the API Server, you can find the list of available models to choose from by specifying nothing in the model name field and clicking on the **Verify Connection** button. You will get a respose indicating the available models to choose from:
+   - Once connected to the API Server, you can find the list of available models to choose from by specifying nothing in the model name field and clicking on the **Verify Connection** button. You will get a response indicating the available models to choose from:
    ![Available Models](docs/assets/5-available-models.png)
 
 ## 📄 License
