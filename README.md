@@ -155,8 +155,13 @@ mistral-hackathon-2026-virtualeye/
    ![Preview Uploaded Images](docs/assets/3-cctv-temporal-reasoning-pre-analysis.png)
    - Click on the **Analyse Delta** button and wait for the model to respond.
    ![Waiting for Model Response](docs/assets/3-cctv-temporal-reasoning-ongoing-analysis.png)
-   - The response from the model will be displayed in the answer container.
-   ![CCTV Temporal Reasoning](docs/assets/3-cctv-temporal-reasoning-post-analysis.png)
+   - The response from the model will be displayed in the answer container and will be colour-coded based on the severity of the event, for example:
+      - `RED (Significant Event):`
+      ![CCTV Temporal Reasoning RED Severity](docs/assets/3-cctv-temporal-reasoning-post-analysis-red.png)
+      - `YELLOW (Moderate/Uncertain Event):`
+      ![CCTV Temporal Reasoning YELLOW Severity](docs/assets/3-cctv-temporal-reasoning-post-analysis-yellow.png)
+      - `GREEN (Normal Event):`
+      ![CCTV Temporal Reasoning GREEN Severity](docs/assets/3-cctv-temporal-reasoning-post-analysis-green.png)
 
 ### Frequently Asked Questions (FAQ)
 
@@ -171,6 +176,45 @@ mistral-hackathon-2026-virtualeye/
    - This seems to be a bug with LMStudio. A known workaround is to eject the model, load it again, and then press the **Analyse Delta** or **Generate Spatial Description** buttons again.
    
    ![LMStudio Bug](docs/assets/4-lmstudio-error-400.png)
+
+   The LMStudio error that casues this HTTP 400 response usually is:
+```
+2026-03-01 14:09:14  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Prompt processing progress: 0.0%
+2026-03-01 14:09:14 [DEBUG]
+ image slice encoded in 79 ms
+decoding image batch 1/2, n_tokens_batch = 512
+2026-03-01 14:09:14 [DEBUG]
+ image decoded (batch 1/2) in 252 ms
+decoding image batch 2/2, n_tokens_batch = 512
+2026-03-01 14:09:14 [DEBUG]
+ decode: failed to find a memory slot for batch of size 512
+failed to decode image
+failed to decode image
+srv  process_chun: image processed in 334 ms
+mtmd_helper_eval failed with status 1slot update_slots: id  2 | task 321 | failed to process image, res = 1
+srv    send_error: task id = 321, error: failed to process image
+slot      release: id  2 | task 321 | stop processing: n_tokens = 1158, truncated = 0
+2026-03-01 14:09:14  [INFO]
+ [mistralai/ministral-3-14b-reasoning] Prompt processing progress: 0.0%
+2026-03-01 14:09:14 [ERROR]
+ [mistralai/ministral-3-14b-reasoning] Error: Channel Error
+2026-03-01 14:09:14 [DEBUG]
+ srv  update_slots: no tokens to decode
+srv  update_slots: all slots are idle
+[lmstudio-llama-cpp] Error in predictTokens: failed to process image
+1 Error predicting: _0x27c8df [Error]: failed to process image
+    at _0x52dd0d.<computed>.predictTokens (C:\Dev\LM Studio\resources\app\.webpack\lib\llmworker.js:87:29893)
+    at async _0x5526f7.predictTokens (C:\Dev\LM Studio\resources\app\.webpack\lib\llmworker.js:126:20368)
+    at async _0x5526f7.handleMessage (C:\Dev\LM Studio\resources\app\.webpack\lib\llmworker.js:126:9454) {
+  cause: undefined,
+  suggestion: undefined,
+  errorData: undefined,
+  data: undefined,
+  displayData: undefined,
+  title: 'failed to process image'
+}
+```
 
 3. Where can I find the sample images used in this project?
    - You can find the sample images in the [docs/samples](docs/samples) directory. These images originated from: https://www.youtube.com/watch?v=u_EwrAsv3r4
