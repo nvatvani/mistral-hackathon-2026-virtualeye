@@ -36,7 +36,7 @@ By executing Large Language Models at the edge (locally on the user's hardware) 
 
 - **Dual LLM Backend Flexibility:** Interactions are powered by Mistral's vision-compatible models (e.g., `ministral-3-14b-reasoning`, `pixtral-12b`). The application dynamically routes API fetch calls to either a local edge node via [LMStudio](https://lmstudio.ai) (`http://192.168.1.3:1234/v1`) or the global Mistral API Cloud (`https://api.mistral.ai/v1`) directly from the browser.
 - **Frontend/Web Framework:** A lightweight, **stateless** Python-driven web application using **PyScript** (WebAssembly) and **Tailwind CSS**. Python executes entirely client-side.
-- **Dynamic Configuration & Resilience:** Features a dedicated `Settings & Status` UI tab to validate model availability, handle API Key injections, and gracefully manage Cloud API Rate Limits via exponential backoff retry loops. Markdown LLM responses are natively rendered via `marked.js`.
+- **Dynamic Configuration & Resilience:** Features a dedicated `Settings & Status` UI tab to validate model availability, handle API Key injections, and gracefully manage Cloud API Rate Limits via exponential backoff retry loops. Uploaded images are automatically optimised client-side (resized to a maximum of 1540×1540 and converted to JPEG) to minimise API payload sizes and avoid rate limit errors. Markdown LLM responses are natively rendered via `marked.js`.
 - **Authentication:** Strict login requirement per session. Credentials are securely managed via a plain-text file storing usernames and hashed passwords (client-side validation).
 - **Hosting & Deployment:** The application relies entirely on static resources, allowing it to be continuously built and deployed via **GitHub Actions** and hosted on **[GitHub Pages](https://nvatvani.github.io/mistral-hackathon-2026-virtualeye/)**.
 
@@ -204,7 +204,10 @@ mistral-hackathon-2026-virtualeye/
 ### Frequently Asked Questions (FAQ)
 
 1. Sometimes the MistralAI Cloud API returns a "429 Too Many Requests" error. What should I do?
-   - Wait for a few moments and try again.
+   - The application automatically mitigates this in two ways:
+     - **Image Optimisation:** All uploaded images are resized client-side to a maximum resolution of 1540×1540 and converted to JPEG before being sent to the API. This dramatically reduces the payload size (by up to ~97%) and helps stay within Mistral's free-tier rate limits (1 request per second, ~500K tokens per minute).
+     - **Exponential Backoff Retries:** If a 429 error is still returned, the application automatically retries up to 5 times with exponential backoff (2s, 4s, 8s, 16s base delays plus a 1.5s cooldown between attempts).
+   - If the error persists despite the automatic retries, wait for a few moments and try again.
    ![MistralAI HTTP Error 429](docs/assets/4-mistralai-error-429.png)
    - Check https://status.mistral.ai/ to rule out any ongoing issues with the MistralAI Cloud services.
    

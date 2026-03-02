@@ -251,6 +251,58 @@ async def read_file_as_data_url(file):
     
     return await future
 
+async def resize_image_data_url(data_url, max_dim=1540):
+    """Resize an image data URL to fit within max_dim x max_dim and convert to JPEG.
+    
+    Uses an HTML5 Canvas element via JS interop to perform the resize client-side.
+    All image formats are converted to JPEG to minimise payload size for the API.
+    """
+    from js import document as js_doc, Image as JsImage
+    
+    img = JsImage.new()
+    load_future = asyncio.Future()
+    
+    def on_img_load(event):
+        if not load_future.done():
+            load_future.set_result(True)
+    
+    def on_img_error(event):
+        if not load_future.done():
+            load_future.set_exception(Exception("Failed to load image for resizing"))
+    
+    img.onload = on_img_load
+    img.onerror = on_img_error
+    img.src = data_url
+    
+    await load_future
+    
+    orig_w = img.naturalWidth
+    orig_h = img.naturalHeight
+    
+    # Calculate new dimensions maintaining aspect ratio
+    if orig_w > max_dim or orig_h > max_dim:
+        scale = min(max_dim / orig_w, max_dim / orig_h)
+        new_w = int(orig_w * scale)
+        new_h = int(orig_h * scale)
+    else:
+        new_w = orig_w
+        new_h = orig_h
+    
+    # Create an offscreen canvas and draw the resized image
+    canvas = js_doc.createElement("canvas")
+    canvas.width = new_w
+    canvas.height = new_h
+    ctx = canvas.getContext("2d")
+    ctx.drawImage(img, 0, 0, new_w, new_h)
+    
+    # Export as JPEG at 0.85 quality to minimise payload size
+    resized_data_url = canvas.toDataURL("image/jpeg", 0.85)
+    
+    console.log(f"Image resized: {orig_w}x{orig_h} -> {new_w}x{new_h}, "
+                f"original ~{len(data_url)//1024}KB -> resized ~{len(resized_data_url)//1024}KB")
+    
+    return resized_data_url
+
 async def handle_image_upload(event, slot):
     files = event.target.files
     if files.length > 0:
@@ -329,13 +381,13 @@ async def call_lmstudio_vision(messages):
         if use_api_key and api_key:
             req_headers["Authorization"] = f"Bearer {api_key}"
             
-        # Mistral API free tier has a restrictive rate limit (6 req/sec). 
-        # Add a slight delay if we're hitting their cloud endpoint to help avoid HTTP 429 errors.
+        # Mistral API free tier has a restrictive rate limit (1 req/sec). 
+        # Add a delay if we're hitting their cloud endpoint to help avoid HTTP 429 errors.
         if "api.mistral.ai" in url:
-            await asyncio.sleep(0.4)
+            await asyncio.sleep(1.5)
         
-        max_retries = 3
-        base_delay = 1.0  # seconds
+        max_retries = 5
+        base_delay = 2.0  # seconds
         
         for attempt in range(max_retries):
             try:
@@ -350,8 +402,7 @@ async def call_lmstudio_vision(messages):
                     if attempt < max_retries - 1:
                         wait_time = base_delay * (2 ** attempt)
                         console.log(f"HTTP 429 Too Many Requests. Retrying in {wait_time} seconds (Attempt {attempt + 1} of {max_retries})...")
-                        import asyncio
-                        await asyncio.sleep(wait_time)
+                        await asyncio.sleep(wait_time + 1.5)  # extra 1.5s to let rate limit window reset
                         continue
                     else:
                         raise Exception(f"HTTP Error {response.status}")
@@ -367,8 +418,7 @@ async def call_lmstudio_vision(messages):
                     # Catch cases where pyfetch might throw an exception on 429 before we process it
                     wait_time = base_delay * (2 ** attempt)
                     console.log(f"Caught HTTP 429 Exception. Retrying in {wait_time} seconds (Attempt {attempt + 1} of {max_retries})...")
-                    import asyncio
-                    await asyncio.sleep(wait_time)
+                    await asyncio.sleep(wait_time + 1.5)  # extra 1.5s to let rate limit window reset
                     continue
                 elif attempt == max_retries - 1:
                     raise e # Re-raise if out of retries
@@ -394,6 +444,12 @@ async def analyse_cctv(event):
         return
         
     model_name = document.getElementById("config-model").value.strip()
+    show_loader(True, "Optimising images for API...")
+    
+    # Resize images to max 1540x1540 and convert to JPEG to reduce payload size
+    img1_resized = await resize_image_data_url(state["images"][1])
+    img2_resized = await resize_image_data_url(state["images"][2])
+    
     show_loader(True, f"Communicating with Model '{model_name}'...")
     
     messages = [
@@ -405,9 +461,9 @@ async def analyse_cctv(event):
             "role": "user",
             "content": [
                 {"type": "text", "text": "Image 1 (Before):"},
-                {"type": "image_url", "image_url": {"url": state["images"][1]}},
+                {"type": "image_url", "image_url": {"url": img1_resized}},
                 {"type": "text", "text": "Image 2 (After):"},
-                {"type": "image_url", "image_url": {"url": state["images"][2]}},
+                {"type": "image_url", "image_url": {"url": img2_resized}},
                 {"type": "text", "text": "Perform temporal reasoning and describe the critical event delta between these two images."}
             ]
         }
@@ -464,6 +520,11 @@ async def analyse_accessibility(event):
         return
         
     model_name = document.getElementById("config-model").value.strip()
+    show_loader(True, "Optimising image for API...")
+    
+    # Resize image to max 1540x1540 and convert to JPEG to reduce payload size
+    img3_resized = await resize_image_data_url(state["images"][3])
+    
     show_loader(True, f"Communicating with Model '{model_name}'...")
     
     messages = [
@@ -475,7 +536,7 @@ async def analyse_accessibility(event):
             "role": "user",
             "content": [
                 {"type": "text", "text": "Provide a high-detail spatial description of this image to help me navigate it."},
-                {"type": "image_url", "image_url": {"url": state["images"][3]}}
+                {"type": "image_url", "image_url": {"url": img3_resized}}
             ]
         }
     ]
