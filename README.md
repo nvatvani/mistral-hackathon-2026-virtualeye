@@ -156,7 +156,7 @@ mistral-hackathon-2026-virtualeye/
 2. **Login & Configuration:**
    - Once logged in, be ***VERY CAREFUL*** about refreshing the page because this is a **stateless** application. You will ***lose your session*** and be forced to log in again.
    ![Settings & Status](docs/assets/1-settings-and-status.png)
-   - Use the **Settings & Status** tab to map your desired API Endpoint (LMStudio vs MistralAI Cloud API) and input your Bearer API Key if utilizing Mistral La Plateforme. Click **Verify Connection** to test network continuity before attempting to use the features!
+   - Use the **Settings & Status** tab to map your desired API Endpoint (LMStudio vs MistralAI Cloud API) and input your Bearer API Key if utilizing Mistral La Plateforme. Click **Verify Connection** to test network connectivity before attempting to use the features!
       - **LMStudio:**
          - Make sure you are using a web browser that supports LNA (Local Network Access) such as [Microsoft Edge](https://learn.microsoft.com/en-us/deployedge/ms-edge-local-network-access) or [Google Chrome](https://developer.chrome.com/blog/local-network-access/) that were both made LNA-compatible in Q4-2025.
          
